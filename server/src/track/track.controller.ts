@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,8 +20,13 @@ export class TrackController {
   constructor(private trackService: TrackService) {}
 
   @Get()
-  getAll() {
-    return this.trackService.getAll();
+  getAll(@Query('count') count: string, @Query('offset') offset: string) {
+    return this.trackService.getAll(Number(count), Number(offset));
+  }
+
+  @Get('/search')
+  search(@Query('query') query: string) {
+    return this.trackService.search(query);
   }
 
   @Get(':id')
