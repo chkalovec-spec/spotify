@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
+import { FileService, FileType } from 'src/file/file.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { Comment, CommentDocument } from './schemas/comment.schema';
@@ -11,6 +12,7 @@ export class TrackService {
   constructor(
     @InjectModel(Track.name) private trackModel: Model<TrackDocument>,
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
+    private fileService: FileService,
   ) {}
 
   async getAll(): Promise<Track[]> {
@@ -23,8 +25,19 @@ export class TrackService {
     return track;
   }
 
-  async create(dto: CreateTrackDto): Promise<Track> {
-    const track = await this.trackModel.create({ ...dto, listens: 0 });
+  async create(
+    dto: CreateTrackDto,
+    picture: Express.Multer.File,
+    audio: Express.Multer.File,
+  ): Promise<Track> {
+    const imagePath = this.fileService.createFile(FileType.IMAGE, picture);
+    const audioPath = this.fileService.createFile(FileType.AUDIO, audio);
+    const track = await this.trackModel.create({
+      ...dto,
+      listens: 0,
+      audio: audioPath,
+      picture: imagePath,
+    });
     return track;
   }
 
@@ -39,5 +52,11 @@ export class TrackService {
     track.comment.push(comment._id);
     await track.save();
     return comment;
+  }
+
+  async listen(trackId: ObjectId): Promise<void> {
+    const track = await this.trackModel.findById(trackId);
+    track.listens += 1;
+    track.save();
   }
 }
